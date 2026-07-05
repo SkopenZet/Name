@@ -1,29 +1,37 @@
-name: Build Plugin
+name: Build and Pack Jar
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # Позволяет запускать сборку вручную кнопкой
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+    # 1. Скачиваем код репозитория
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
+    # 2. Ставим Java 21 (на чистой Linux-системе без русских букв в путях!)
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'temurin'
 
+    # 3. Даем права на запуск сборщика
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # Подсовываем пустые параметры, чтобы Gradle не падал из-за отсутствия git-тегов
+    # 4. Запускаем сборку (пропускаем тесты для скорости)
     - name: Build with Gradle
-      run: ./gradlew build -Pversion="3.0.19" -x test --build-cache
+      run: ./gradlew build -x test --build-cache
       env:
         CI: true
+
+    # 5. Забираем готовый .jar и выкладываем его на страницу сборки
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CustomNameplates-Ready-Jar
+        path: "**/build/libs/*.jar" # Ищет готовые файлы во всех подмодулях проекта
